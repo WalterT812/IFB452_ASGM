@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import "./AuditLog.sol";
+
 
 contract EmergencyAccess {
     //Defining roles
@@ -42,9 +44,10 @@ contract EmergencyAccess {
     event AccessRevoked (address Provider, string patientID, uint timestamp);
 
     //Constructors and Modiefiers
-    constructor(){
-        admin = msg.sender;
-    }
+        constructor(address _auditLogAddress){
+            admin = msg.sender;
+            auditLogContract = AuditLog(_auditLogAddress);
+            }
 
     modifier onlyAdmin(){
         require (msg.sender == admin, "Only admin can perform this action");
@@ -90,11 +93,16 @@ contract EmergencyAccess {
             block.timestamp,
             true
         );
+
+        //Grants access
         emit AccessGranted(msg.sender, _patientID, providers[msg.sender].role, block.timestamp);
+
+        //calling auditlog after access is granted
+        auditLogContract.addLog(msg.sender, _patientID, "Access Granted", "Pending");
     }
 
         //role-based data retrieval
-        function getPatientData(string memory _patientID) public view onlyRegisteredProvider returns (string memory dataScope, string memory dbReference) {
+        function getPatientData(string memory _patientID) public onlyRegisteredProvider returns (string memory dataScope, string memory dbReference) {
             accessSession memory session = activeSessions [msg.sender];
 
             require(session.isActive, "No active session for this patient");
@@ -108,7 +116,11 @@ contract EmergencyAccess {
                 dataScope = "FULL"; //frontend fetches full record
             }
 
+            //getting scope reference
             dbReference = patientRecords[_patientID].dbReference;
+
+            //log audit after scope determined
+            auditLogContract.addLog(msg.sender, _patientID, "Data Accessed", dataScope);
         }
         
         //Revoking access
@@ -118,6 +130,13 @@ contract EmergencyAccess {
             string memory patientID = activeSessions[msg.sender].patientID;
             activeSessions[msg.sender].isActive = false;
 
+            //revokes access
             emit AccessRevoked(msg.sender, patientID, block.timestamp);
+
+            //logs audit
+            auditLogContract.addLog(msg.sender, patientID, "Access Revoked", "");
         } 
+        AuditLog public auditLogContract;
+
+
     }
