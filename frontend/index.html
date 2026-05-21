@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedLink</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 700;
+            color: #00d4aa;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 60px;
+            letter-spacing: 1px;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            padding: 0 20px;
+        }
+
+        .role-card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: white;
+        }
+
+        .role-card:hover {
+            border-color: #00d4aa;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 212, 170, 0.15);
+        }
+
+        .role-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .role-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #00d4aa;
+        }
+
+        .role-desc {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 60px;
+            font-size: 11px;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo">MedLink</div>
+    <div class="tagline">Because emergencies don't wait for paperwork.</div>
+
+    <div class="role-grid">
+        <a href="institution.html" class="role-card">
+            <div class="role-icon">🏥</div>
+            <div class="role-title">Institution</div>
+            <div class="role-desc">Register providers, submit patient records, manage consent</div>
+        </a>
+
+        <a href="provider.html?role=paramedic" class="role-card">
+            <div class="role-icon">🚑</div>
+            <div class="role-title">Paramedic</div>
+            <div class="role-desc">Request emergency access to triage-critical patient data</div>
+        </a>
+
+        <a href="provider.html?role=physician" class="role-card">
+            <div class="role-icon">👨‍⚕️</div>
+            <div class="role-title">Physician</div>
+            <div class="role-desc">Request emergency access to full patient medical history</div>
+        </a>
+
+        <a href="audit.html" class="role-card">
+            <div class="role-icon">📋</div>
+            <div class="role-title">Audit Log</div>
+            <div class="role-desc">View complete access history for any patient record</div>
+        </a>
+    </div>
+
+    <div class="footer">IFB452 — Blockchain Technology | Group 35</div>
+
+</body>
+</html>
