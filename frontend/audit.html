@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedLink — Audit Log</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4aa;
+        }
+
+        .back-btn {
+            font-size: 13px;
+            color: #6b7280;
+            text-decoration: none;
+            border: 1px solid #1f2937;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #00d4aa;
+            border-color: #00d4aa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #00d4aa;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        input {
+            flex: 1;
+            background: #0a0e1a;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: #00d4aa;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: #00d4aa;
+            color: #0a0e1a;
+        }
+
+        .btn-primary:hover {
+            background: #00b894;
+        }
+
+        .status-box {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        /* Log entries */
+        .log-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .log-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .log-count {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .log-entry {
+            background: #0a0e1a;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .log-entry:hover {
+            border-color: #374151;
+        }
+
+        .log-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .action-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .action-granted {
+            background: rgba(0, 212, 170, 0.15);
+            color: #00d4aa;
+            border: 1px solid #00d4aa;
+        }
+
+        .action-accessed {
+            background: rgba(99, 102, 241, 0.15);
+            color: #6366f1;
+            border: 1px solid #6366f1;
+        }
+
+        .action-revoked {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .action-pending {
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+            border: 1px solid #fb923c;
+        }
+
+        .log-timestamp {
+            font-size: 11px;
+            color: #6b7280;
+            font-family: monospace;
+        }
+
+        .log-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .log-detail-item {
+            font-size: 12px;
+        }
+
+        .log-detail-label {
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+
+        .log-detail-value {
+            color: #d1d5db;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .scope-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .scope-triage {
+            background: rgba(251, 146, 60, 0.2);
+            color: #fb923c;
+        }
+
+        .scope-full {
+            background: rgba(99, 102, 241, 0.2);
+            color: #6366f1;
+        }
+
+        .scope-pending {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">MedLink</div>
+        <a href="index.html" class="back-btn">← Back</a>
+    </div>
+
+    <div class="page-title">📋 Audit Log</div>
+    <div class="page-subtitle">Every access event permanently recorded on the blockchain</div>
+
+    <!-- Search -->
+    <div class="card">
+        <div class="card-title">Search Patient Access History</div>
+        <div class="card-desc">Enter a patient ID to retrieve all access events recorded on the blockchain for that patient.</div>
+
+        <div class="search-row">
+            <input type="text" id="searchPatientID" placeholder="e.g. PAT001"/>
+            <button class="btn btn-primary" onclick="fetchAuditLog()">Search</button>
+        </div>
+        <div class="status-box" id="searchStatus"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="log-container" id="logContainer">
+        <div class="log-header">
+            <div class="log-title">Access History</div>
+            <div class="log-count" id="logCount"></div>
+        </div>
+        <div id="logEntries"></div>
+    </div>
+
+</div>
+
+<!-- Ethers.js -->
+<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/audit.js"></script>
+
+</body>
+</html>
