@@ -141,7 +141,7 @@ async function submitRecord() {
     const statusEl = document.getElementById("submitStatus");
 
     if (!patientID || !recordHash || !dbReference) {
-        showStatus(statusEl, "Please fill in all fields.", "error");
+        showStatus(statusEl, "Please fill in all fields and generate hash first.", "error");
         return;
     }
 
@@ -149,9 +149,35 @@ async function submitRecord() {
         showStatus(statusEl, "Submitting record to blockchain...", "success");
         const tx = await emergencyContract.submitRecord(patientID, recordHash, dbReference);
         await tx.wait();
+
+        // Save full patient data to SQLite via API (activated after Node.js setup)
+        await savePatientToDatabase({
+            patientID,
+            name: document.getElementById("patientName").value,
+            bloodType: document.getElementById("bloodType").value,
+            allergies: document.getElementById("allergies").value,
+            medications: document.getElementById("medications").value,
+            conditions: document.getElementById("conditions").value,
+            dbReference,
+            recordHash
+        });
+
         showStatus(statusEl, `✅ Record submitted. TX: ${tx.hash.slice(0,20)}...`, "success");
     } catch (error) {
         showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+    }
+}
+
+async function savePatientToDatabase(data) {
+    try {
+        await fetch("http://localhost:3000/api/patient", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+    } catch (error) {
+        // API not running yet — silently fails until Node.js is set up
+        console.log("Database API not connected yet:", error.message);
     }
 }
 
@@ -444,6 +470,71 @@ function startTimer() {
             );
         }
     }, 1000);
+}
+
+// ═══════════════════════════════════════
+// AUTO-GENERATE HASH AND DB REFERENCE
+// ═══════════════════════════════════════
+
+function generateRecordFields() {
+    const patientID = document.getElementById("submitPatientID").value.trim();
+    const name = document.getElementById("patientName").value.trim();
+    const bloodType = document.getElementById("bloodType").value;
+    const allergies = document.getElementById("allergies").value.trim();
+    const medications = document.getElementById("medications").value.trim();
+    const conditions = document.getElementById("conditions").value.trim();
+
+    if (!patientID) {
+        alert("Please enter a Patient ID first.");
+        return;
+    }
+
+    // Generate DB reference from patientID + timestamp
+    const timestamp = Date.now();
+    const dbRef = `${patientID}_${timestamp}`;
+    document.getElementById("dbReference").value = dbRef;
+
+    // Generate record hash from all fields combined
+    const rawData = `${patientID}|${name}|${bloodType}|${allergies}|${medications}|${conditions}|${timestamp}`;
+    const hash = ethers.utils.id(rawData); // keccak256 via ethers.js
+    document.getElementById("recordHash").value = hash;
+}
+
+// ═══════════════════════════════════════
+// VIEW PATIENT RECORD
+// ═══════════════════════════════════════
+
+async function viewPatientRecord() {
+    const patientID = document.getElementById("viewPatientID").value.trim();
+    const statusEl = document.getElementById("viewStatus");
+    const display = document.getElementById("viewRecordDisplay");
+
+    if (!patientID) {
+        showStatus(statusEl, "Please enter a patient ID.", "error");
+        return;
+    }
+
+    try {
+        showStatus(statusEl, "Fetching from blockchain...", "success");
+
+        const record = await emergencyContract.patientRecords(patientID);
+
+        if (!record.exists) {
+            showStatus(statusEl, `⛔ No record found for ${patientID}.`, "error");
+            display.style.display = "none";
+            return;
+        }
+
+        document.getElementById("view_patientID").textContent = record.patientID;
+        document.getElementById("view_recordHash").textContent = record.recordHash;
+        document.getElementById("view_dbReference").textContent = record.dbReference;
+
+        statusEl.style.display = "none";
+        display.style.display = "block";
+
+    } catch (error) {
+        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+    }
 }
 
 // ═══════════════════════════════════════

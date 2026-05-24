@@ -232,20 +232,53 @@
         <!-- Submit Patient Record -->
         <div class="card">
             <div class="card-title">Submit Patient Record</div>
-            <div class="card-desc">Upload a patient record hash and database reference to the blockchain.</div>
+            <div class="card-desc">Enter patient details — hash and database reference are auto-generated.</div>
 
             <div class="form-group">
                 <label>Patient ID</label>
                 <input type="text" id="submitPatientID" placeholder="e.g. PAT001"/>
             </div>
             <div class="form-group">
-                <label>Record Hash</label>
-                <input type="text" id="recordHash" placeholder="keccak256 hash"/>
+                <label>Patient Name</label>
+                <input type="text" id="patientName" placeholder="e.g. John Smith"/>
             </div>
             <div class="form-group">
-                <label>Database Reference</label>
-                <input type="text" id="dbReference" placeholder="e.g. db_row_001"/>
+                <label>Blood Type</label>
+                <select id="bloodType">
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label>Known Allergies</label>
+                <input type="text" id="allergies" placeholder="e.g. Penicillin, Aspirin"/>
+            </div>
+            <div class="form-group">
+                <label>Active Medications</label>
+                <input type="text" id="medications" placeholder="e.g. Metformin 500mg"/>
+            </div>
+            <div class="form-group">
+                <label>Critical Conditions</label>
+                <input type="text" id="conditions" placeholder="e.g. Type 2 Diabetes, Hypertension"/>
+            </div>
+
+            <!-- Auto-generated fields (read only, shown for transparency) -->
+            <div class="form-group">
+                <label>Record Hash (auto-generated)</label>
+                <input type="text" id="recordHash" readonly style="color: #6b7280; font-size: 11px;"/>
+            </div>
+            <div class="form-group">
+                <label>Database Reference (auto-generated)</label>
+                <input type="text" id="dbReference" readonly style="color: #6b7280;"/>
+            </div>
+
+            <button class="btn btn-primary" style="margin-bottom: 10px; background: #1f2937; color: #6b7280;" onclick="generateRecordFields()">Generate Hash & Reference</button>
             <button class="btn btn-primary" onclick="submitRecord()">Submit Record</button>
             <div class="status-box" id="submitStatus"></div>
         </div>
@@ -275,6 +308,36 @@
             </div>
             <button class="btn btn-primary" onclick="checkConsent()">Check Status</button>
             <div class="status-box" id="checkConsentStatus"></div>
+        </div>
+
+        <!-- View Patient Record -->
+        <div class="card">
+            <div class="card-title">View Patient Record</div>
+            <div class="card-desc">Look up what is currently stored on-chain for a patient ID.</div>
+
+            <div class="form-group">
+                <label>Patient ID</label>
+                <input type="text" id="viewPatientID" placeholder="e.g. PAT001"/>
+            </div>
+            <button class="btn btn-primary" onclick="viewPatientRecord()">View Record</button>
+            <div class="status-box" id="viewStatus"></div>
+
+            <div id="viewRecordDisplay" style="display:none; margin-top: 16px;">
+                <div style="border-top: 1px solid #1f2937; padding-top: 16px;">
+                    <div class="data-row" style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #1f2937; font-size:13px;">
+                        <span style="color:#6b7280;">Patient ID</span>
+                        <span id="view_patientID" style="color:#fff;"></span>
+                    </div>
+                    <div class="data-row" style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #1f2937; font-size:13px;">
+                        <span style="color:#6b7280;">Record Hash</span>
+                        <span id="view_recordHash" style="color:#00d4aa; font-family:monospace; font-size:11px; word-break:break-all; max-width:60%; text-align:right;"></span>
+                    </div>
+                    <div class="data-row" style="display:flex; justify-content:space-between; padding: 8px 0; font-size:13px;">
+                        <span style="color:#6b7280;">DB Reference</span>
+                        <span id="view_dbReference" style="color:#fff;"></span>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
