@@ -100,4 +100,9 @@ contract AuditLog {
 
         return result ;
     }
+
+    //update auditlog with new address
+    function updateEmergencyContact(address _newAddress) public onlyAdmin{
+        emergencyContract = _newAddress;
+    }
 }
