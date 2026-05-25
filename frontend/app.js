@@ -4,9 +4,9 @@
 
 // ── Contract Addresses (fill after Ganache deployment) ──
 const CONTRACT_ADDRESSES = {
-    emergencyAccess: "0x032499E677E156f6e242d2fFa64A0A7ACa86Db94",
-    auditLog: "0x6910EbEC1867fd4139a6e63A9c183C9298FE9f85",
-    patientConsent: "0xe85b1A0b28D96c4b07f52C92718BAaC1dA5cAA5f"
+    emergencyAccess: "0x81a3a5940Ec3605034CB9620Be9B1CdA6D45cC85",
+    auditLog: "0xAeD3674BFAE41C31E5DBc531A11C4A47181f6bFF",
+    patientConsent: "0x99EC0FB9eaE3F8B40AFc078e0cdd4Cb62A5483E7"
 };
 
 // ── Contract ABIs (fill after Remix compilation) ──
