@@ -4,45 +4,716 @@
 
 // ── Contract Addresses (fill after Ganache deployment) ──
 const CONTRACT_ADDRESSES = {
-    emergencyAccess: "EMERGENCY_ACCESS_ADDRESS_HERE",
-    auditLog: "AUDIT_LOG_ADDRESS_HERE",
-    patientConsent: "PATIENT_CONSENT_ADDRESS_HERE"
+    emergencyAccess: "0x032499E677E156f6e242d2fFa64A0A7ACa86Db94",
+    auditLog: "0x6910EbEC1867fd4139a6e63A9c183C9298FE9f85",
+    patientConsent: "0xe85b1A0b28D96c4b07f52C92718BAaC1dA5cAA5f"
 };
 
 // ── Contract ABIs (fill after Remix compilation) ──
 const EMERGENCY_ACCESS_ABI = [
-    "function registerProvider(address _provider, uint8 _role) public",
-    "function submitRecord(string memory _patientID, string memory _recordHash, string memory _dbReference) public",
-    "function requestEmergencyAccess(string memory _patientID) public",
-    "function getPatientData(string memory _patientID) public returns (string memory dataScope, string memory dbReference)",
-    "function revokeAccess() public",
-    "function providers(address) public view returns (address wallet, uint8 role, bool isRegistered)",
-    "function activeSessions(address) public view returns (address provider, string memory patientID, uint256 startTime, bool isActive)",
-    "event AccessGranted(address provider, string patientID, uint8 role, uint256 timestamp)",
-    "event AccessRevoked(address provider, string patientID, uint256 timestamp)"
-];
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_auditLogAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "Provider",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum EmergencyAccess.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "startTime",
+				"type": "uint256"
+			}
+		],
+		"name": "AccessGranted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "Provider",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "AccessRevoked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "provider",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum EmergencyAccess.Role",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "ProviderRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "recordHash",
+				"type": "string"
+			}
+		],
+		"name": "RecordSubmitted",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "activeSessions",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "provider",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "startTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "auditLogContract",
+		"outputs": [
+			{
+				"internalType": "contract AuditLog",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "getPatientData",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "dataScope",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "dbReference",
+				"type": "string"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "patientRecords",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "recordHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "dbReference",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "exists",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "providers",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "wallet",
+				"type": "address"
+			},
+			{
+				"internalType": "enum EmergencyAccess.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bool",
+				"name": "isRegistered",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_provider",
+				"type": "address"
+			},
+			{
+				"internalType": "enum EmergencyAccess.Role",
+				"name": "_role",
+				"type": "uint8"
+			}
+		],
+		"name": "registerProvider",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "requestEmergencyAccess",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "revokeAccess",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_recordHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_dbReference",
+				"type": "string"
+			}
+		],
+		"name": "submitRecord",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]
 
 const AUDIT_LOG_ABI = [
-    "function getLogCount() public view returns (uint256)",
-    "function getLogEntry(uint256 _index) public view returns (address provider, string memory patientID, string memory access, string memory dataScope, uint256 timestamp)",
-    "function getPatientLogs(string memory _patientID) public view returns (tuple(address provider, string patientID, string access, string dataScope, uint256 timestamp)[])",
-    "event LogAdded(address provider, string patientID, string access, uint256 timestamp)"
-];
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_emergencyContract",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "Provider",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "access",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timeStamp",
+				"type": "uint256"
+			}
+		],
+		"name": "LogAdded",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_provider",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_access",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_dataScope",
+				"type": "string"
+			}
+		],
+		"name": "addLog",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "auditLog",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "provider",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "access",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "dataScope",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "emergencyContract",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getLogCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_index",
+				"type": "uint256"
+			}
+		],
+		"name": "getLogEntry",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "provider",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "PatientID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "access",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "dataScope",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "getPatientLogs",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "address",
+						"name": "provider",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "patientID",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "access",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "dataScope",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct AuditLog.AuditEntry[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_newAddress",
+				"type": "address"
+			}
+		],
+		"name": "updateEmergencyContact",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]
 
 const PATIENT_CONSENT_ABI = [
-    "function grantAccess(string memory _patientID) public",
-    "function revokeConsent(string memory _patientID) public",
-    "function hasConsent(string memory _patientID) public view returns (bool)",
-    "event ConsentGranted(string patientID, uint256 timestamp)",
-    "event ConsentRevoked(string patientID, uint256 timestamp)"
-];
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "ConsentGranted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "ConsentRevoked",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "consents",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "patientID",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "grantedAt",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "grantAccess",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "hasConsent",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_patientID",
+				"type": "string"
+			}
+		],
+		"name": "revokeConsent",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]
 
 // ── Ganache Test Accounts ──
 const ACCOUNTS = {
-    admin:     "0x05608c92B0E376C51c5e813B5E48f845260c7c61",
-    paramedic: "0xCBBF4E44329d56C56d04CA2285EC3cd8f046d8F8",
-    physician: "0x592b1792D0F3FBD1d1c332d1Caf8750a434F430F",
-    insurance: "0x3433eBb993892263f9E7aE3c139b7763Ce5C1cdc"
+    admin:     "0xCd1E4A5BB516686A853955d84a9624CbFB6dE4a6",
+    paramedic: "0xa691A8DFd20b1C0548089CDC33a6F519cfEab524",
+    physician: "0x6b4da01A9E159BCa48f1D7C50e72b1Efe2912BeF",
+    insurance: "0x35F57cec1727202429Dd5266f8c1De8697cf97D8"
 };
 
 // ── Provider Setup ──
@@ -57,6 +728,8 @@ let timerInterval;
 async function initProvider(role) {
     try {
         provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545");
+        const network = await provider.getNetwork();
+        console.log("Connected to network:", network);
 
         // Select signer based on role
         switch(role) {
@@ -279,7 +952,19 @@ async function fetchPatientData(patientID) {
         const dataScope = result[0];
         const dbReference = result[1];
 
-        displayPatientData(patientID, dataScope, dbReference);
+        // Fetch actual record from SQLite based on scope
+        const endpoint = dataScope === "TRIAGE"
+            ? `http://localhost:3000/api/patient/triage/${dbReference}`
+            : `http://localhost:3000/api/patient/full/${dbReference}`;
+
+        const response = await fetch(endpoint);
+        const record = await response.json();
+
+        if (record.error) {
+            displayPatientData(patientID, dataScope, dbReference);
+        } else {
+            displayRealPatientData(patientID, dataScope, record.data);
+        }
 
     } catch (error) {
         console.error("Failed to fetch patient data:", error);
@@ -426,6 +1111,72 @@ async function fetchAuditLog() {
     } catch (error) {
         showStatus(statusEl, `❌ Error: ${error.message}`, "error");
     }
+}
+
+function displayRealPatientData(patientID, dataScope, data) {
+    const dataDisplay = document.getElementById("dataDisplay");
+    const scopeBadge = document.getElementById("scopeBadge");
+    const dataRows = document.getElementById("patientDataRows");
+
+    if (dataScope === "TRIAGE") {
+        scopeBadge.innerHTML = `<span class="data-scope-badge scope-triage">TRIAGE — Paramedic Access</span>`;
+        dataRows.innerHTML = `
+            <div class="data-row">
+                <span class="data-label">Patient ID</span>
+                <span class="data-value">${data.patientID}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Blood Type</span>
+                <span class="data-value">${data.bloodType || 'Not recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Known Allergies</span>
+                <span class="data-value">${data.allergies || 'None recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Active Medications</span>
+                <span class="data-value">${data.medications || 'None recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Critical Conditions</span>
+                <span class="data-value">${data.conditions || 'None recorded'}</span>
+            </div>
+        `;
+    } else {
+        scopeBadge.innerHTML = `<span class="data-scope-badge scope-full">FULL HISTORY — Physician Access</span>`;
+        dataRows.innerHTML = `
+            <div class="data-row">
+                <span class="data-label">Patient ID</span>
+                <span class="data-value">${data.patientID}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Full Name</span>
+                <span class="data-value">${data.name || 'Not recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Blood Type</span>
+                <span class="data-value">${data.bloodType || 'Not recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Known Allergies</span>
+                <span class="data-value">${data.allergies || 'None recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Active Medications</span>
+                <span class="data-value">${data.medications || 'None recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Critical Conditions</span>
+                <span class="data-value">${data.conditions || 'None recorded'}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Record Created</span>
+                <span class="data-value">${data.createdAt || 'Unknown'}</span>
+            </div>
+        `;
+    }
+
+    dataDisplay.style.display = "block";
 }
 
 // ═══════════════════════════════════════
