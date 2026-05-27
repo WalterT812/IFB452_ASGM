@@ -1390,15 +1390,38 @@ async function viewPatientRecord() {
 // ROLE BANNER (provider.html)
 // ═══════════════════════════════════════
 
+function getProviderRoleFromPage() {
+    if (window.MEDLINK_PROVIDER_ROLE === "paramedic" || window.MEDLINK_PROVIDER_ROLE === "physician") {
+        return window.MEDLINK_PROVIDER_ROLE;
+    }
+    const queryRole = new URLSearchParams(window.location.search).get("role");
+    if (queryRole === "paramedic" || queryRole === "physician") {
+        return queryRole;
+    }
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes("paramedic")) return "paramedic";
+    if (path.includes("physician")) return "physician";
+    return null;
+}
+
 async function initRoleBanner() {
-    const params = new URLSearchParams(window.location.search);
-    const role = params.get("role");
+    const role = getProviderRoleFromPage();
     currentRole = role;
 
     const banner = document.getElementById("roleBanner");
     const icon = document.getElementById("roleIcon");
     const title = document.getElementById("roleTitle");
     const desc = document.getElementById("roleDesc");
+    const statusEl = document.getElementById("accessStatus");
+
+    banner.classList.remove("paramedic", "physician");
+
+    if (role !== "paramedic" && role !== "physician") {
+        title.textContent = "Provider Access";
+        desc.textContent = "Open Paramedic or Physician from the home page.";
+        showStatus(statusEl, "Role not specified. Go back and choose Paramedic or Physician.", "error");
+        return;
+    }
 
     if (role === "paramedic") {
         banner.classList.add("paramedic");
@@ -1498,7 +1521,11 @@ window.addEventListener("load", async () => {
 
     if (page.includes("institution")) {
         await initProvider("admin");
-    } else if (page.includes("provider")) {
+    } else if (
+        page.includes("provider") ||
+        page.includes("paramedic") ||
+        page.includes("physician")
+    ) {
         await initRoleBanner();
     } else if (page.includes("audit")) {
         await initProvider("admin");

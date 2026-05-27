@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedLink — Physician</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4aa;
+        }
+
+        .back-btn {
+            font-size: 13px;
+            color: #6b7280;
+            text-decoration: none;
+            border: 1px solid #1f2937;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #00d4aa;
+            border-color: #00d4aa;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .role-banner {
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .role-banner.paramedic {
+            background: rgba(251, 146, 60, 0.1);
+            border: 1px solid #fb923c;
+        }
+
+        .role-banner.physician {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid #6366f1;
+        }
+
+        .role-icon {
+            font-size: 36px;
+        }
+
+        .role-info h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .role-banner.paramedic .role-info h2 {
+            color: #fb923c;
+        }
+
+        .role-banner.physician .role-info h2 {
+            color: #6366f1;
+        }
+
+        .role-info p {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #00d4aa;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            background: #0a0e1a;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: #00d4aa;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #00d4aa;
+            color: #0a0e1a;
+        }
+
+        .btn-primary:hover {
+            background: #00b894;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            margin-top: 10px;
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-box {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .status-success {
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid #00d4aa;
+            color: #00d4aa;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .wallet-badge {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-family: monospace;
+        }
+
+        .wallet-badge span {
+            color: #00d4aa;
+        }
+
+        /* Patient data display */
+        .data-display {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .data-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00d4aa;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .data-scope-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .scope-triage {
+            background: rgba(251, 146, 60, 0.2);
+            color: #fb923c;
+            border: 1px solid #fb923c;
+        }
+
+        .scope-full {
+            background: rgba(99, 102, 241, 0.2);
+            color: #6366f1;
+            border: 1px solid #6366f1;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #1f2937;
+            font-size: 13px;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            color: #6b7280;
+        }
+
+        .data-value {
+            color: #ffffff;
+            font-weight: 500;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .timer-bar {
+            display: none;
+            margin-top: 20px;
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .timer-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .timer-countdown {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4aa;
+            font-family: monospace;
+        }
+
+        .timer-progress {
+            margin-top: 10px;
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: #00d4aa;
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">MedLink</div>
+        <a href="index.html" class="back-btn">← Back</a>
+    </div>
+
+    <!-- Role banner — changes based on URL param -->
+    <div class="role-banner" id="roleBanner">
+        <div class="role-icon" id="roleIcon"></div>
+        <div class="role-info">
+            <h2 id="roleTitle"></h2>
+            <p id="roleDesc"></p>
+        </div>
+    </div>
+
+    <div class="wallet-badge">
+        Connected wallet: <span id="walletAddress">Loading...</span>
+    </div>
+
+    <!-- Request Access -->
+    <div class="card">
+        <div class="card-title">Request Emergency Access</div>
+        <div class="card-desc">Enter the patient ID to request role-appropriate access to their medical records.</div>
+
+        <div class="form-group">
+            <label>Patient ID</label>
+            <input type="text" id="patientID" placeholder="e.g. PAT001"/>
+        </div>
+        <button class="btn btn-primary" onclick="requestAccess()">Request Access</button>
+        <button class="btn btn-danger" onclick="revokeAccess()" id="revokeBtn" style="display:none">Revoke Access</button>
+        <div class="status-box" id="accessStatus"></div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-bar" id="timerBar">
+        <div class="timer-label">Access window remaining</div>
+        <div class="timer-countdown" id="timerCountdown">15:00</div>
+        <div class="timer-progress">
+            <div class="timer-fill" id="timerFill" style="width:100%"></div>
+        </div>
+    </div>
+
+    <!-- Patient Data Display -->
+    <div class="data-display" id="dataDisplay">
+        <div class="card">
+            <div class="data-header">Patient Record</div>
+            <div id="scopeBadge"></div>
+            <div id="patientDataRows"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>window.MEDLINK_PROVIDER_ROLE = "physician";</script>
+<script src="ethers.min.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
