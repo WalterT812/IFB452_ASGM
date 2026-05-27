@@ -145,9 +145,33 @@ app.get("/api/patient/full/:dbReference", (req, res) => {
     }
 });
 
-// GET /api/patient/:patientID — check if patient exists
+// GET /api/patient/id/:patientID — lookup by patient ID (fallback when dbReference differs on-chain vs DB)
+app.get("/api/patient/id/:patientID", (req, res) => {
+    const { patientID } = req.params;
+
+    try {
+        const patient = db.prepare(`
+            SELECT patientID, name, bloodType, allergies, medications, conditions, dbReference, recordHash, createdAt
+            FROM patients WHERE patientID = ?
+        `).get(patientID);
+
+        if (!patient) {
+            return res.status(404).json({ error: "Patient not found" });
+        }
+
+        res.json({ exists: true, data: patient });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/patient/:patientID — check if patient exists (legacy path)
 app.get("/api/patient/:patientID", (req, res) => {
     const { patientID } = req.params;
+    if (patientID === "id" || patientID === "triage" || patientID === "full") {
+        return res.status(404).json({ error: "Not found" });
+    }
 
     try {
         const patient = db.prepare(`

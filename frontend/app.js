@@ -854,7 +854,7 @@ async function submitRecord() {
         await tx.wait();
 
         // Save full patient data to SQLite via API (activated after Node.js setup)
-        await savePatientToDatabase({
+        const saved = await savePatientToDatabase({
             patientID,
             name: document.getElementById("patientName").value,
             bloodType: document.getElementById("bloodType").value,
@@ -865,7 +865,15 @@ async function submitRecord() {
             recordHash
         });
 
-        showStatus(statusEl, `✅ Record submitted. TX: ${tx.hash.slice(0,20)}...`, "success");
+        if (saved) {
+            showStatus(statusEl, `✅ Record submitted. TX: ${tx.hash.slice(0,20)}...`, "success");
+        } else {
+            showStatus(
+                statusEl,
+                `✅ On-chain record submitted. Start the API (npm start) and submit again to sync SQLite.`,
+                "success"
+            );
+        }
     } catch (error) {
         showErrorStatus(statusEl, error);
     }
@@ -873,14 +881,20 @@ async function submitRecord() {
 
 async function savePatientToDatabase(data) {
     try {
-        await fetch("http://localhost:3000/api/patient", {
+        const response = await fetch("http://localhost:3000/api/patient", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         });
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            console.warn("API save failed:", body.error || response.status);
+            return false;
+        }
+        return true;
     } catch (error) {
-        // API not running yet — silently fails until Node.js is set up
-        console.log("Database API not connected yet:", error.message);
+        console.warn("Database API not connected:", error.message);
+        return false;
     }
 }
 
@@ -1040,28 +1054,66 @@ async function restoreActiveSession() {
     }
 }
 
+async function fetchPatientRecordFromApi(patientID, dataScope, dbReference) {
+    const scopePath = isTriageScope(dataScope) ? "triage" : "full";
+
+    const fetchByReference = async (ref) => {
+        const url = `http://localhost:3000/api/patient/${scopePath}/${encodeURIComponent(ref)}`;
+        const response = await fetch(url);
+        const body = await response.json().catch(() => ({}));
+        return { response, body };
+    };
+
+    let { response, body } = await fetchByReference(dbReference);
+    if (response.ok && body.data && !body.error) {
+        return body.data;
+    }
+
+    const idRes = await fetch(
+        `http://localhost:3000/api/patient/id/${encodeURIComponent(patientID)}`
+    );
+    const idBody = await idRes.json().catch(() => ({}));
+
+    if (idRes.ok && idBody.data) {
+        if (idBody.data.dbReference && idBody.data.dbReference !== dbReference) {
+            ({ response, body } = await fetchByReference(idBody.data.dbReference));
+            if (response.ok && body.data && !body.error) {
+                return body.data;
+            }
+        }
+        return idBody.data;
+    }
+
+    return null;
+}
+
 async function fetchPatientData(patientID) {
+    const statusEl = document.getElementById("accessStatus");
+
     try {
         const result = await emergencyContract.callStatic.getPatientData(patientID);
         const dataScope = result.dataScope ?? result[0];
         const dbReference = result.dbReference ?? result[1];
 
-        // Fetch actual record from SQLite based on scope
-        const endpoint = isTriageScope(dataScope)
-            ? `http://localhost:3000/api/patient/triage/${dbReference}`
-            : `http://localhost:3000/api/patient/full/${dbReference}`;
+        const record = await fetchPatientRecordFromApi(patientID, dataScope, dbReference);
 
-        const response = await fetch(endpoint);
-        const record = await response.json();
-
-        if (record.error) {
-            displayPatientData(patientID, dataScope, dbReference);
+        if (record) {
+            displayRealPatientData(patientID, dataScope, record);
         } else {
-            displayRealPatientData(patientID, dataScope, record.data);
+            displayPatientData(patientID, dataScope, dbReference);
+            if (statusEl) {
+                showStatus(
+                    statusEl,
+                    "On-chain access OK, but no matching record in the local database. Run npm start and re-submit the patient from Institution.",
+                    "error"
+                );
+            }
         }
-
     } catch (error) {
         console.error("Failed to fetch patient data:", error);
+        if (statusEl) {
+            showErrorStatus(statusEl, error);
+        }
     }
 }
 
