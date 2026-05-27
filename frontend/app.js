@@ -708,13 +708,35 @@ const PATIENT_CONSENT_ABI = [
 	}
 ]
 
-// ── Ganache Test Accounts ──
+// ── Ganache Test Accounts (team defaults) ──
 const ACCOUNTS = {
     admin:     "0xCd1E4A5BB516686A853955d84a9624CbFB6dE4a6",
     paramedic: "0xa691A8DFd20b1C0548089CDC33a6F519cfEab524",
     physician: "0x6b4da01A9E159BCa48f1D7C50e72b1Efe2912BeF",
     insurance: "0x35F57cec1727202429Dd5266f8c1De8697cf97D8"
 };
+
+/** Optional: copy config.private.example.js → config.private.js (gitignored) for your Ganache. */
+async function loadOptionalPrivateConfig() {
+    try {
+        const res = await fetch("config.private.js", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const js = await res.text();
+        const parsed = new Function(
+            `${js}\nreturn {\n` +
+            `  accounts: typeof LOCAL_ACCOUNTS !== "undefined" ? LOCAL_ACCOUNTS : null,\n` +
+            `  contracts: typeof LOCAL_CONTRACT_ADDRESSES !== "undefined" ? LOCAL_CONTRACT_ADDRESSES : null\n` +
+            `};`
+        )();
+
+        if (parsed.accounts) Object.assign(ACCOUNTS, parsed.accounts);
+        if (parsed.contracts) Object.assign(CONTRACT_ADDRESSES, parsed.contracts);
+        console.log("[MedLink] Applied config.private.js");
+    } catch (_) {
+        /* use team defaults above */
+    }
+}
 
 // ── Provider Setup ──
 let provider;
@@ -1292,7 +1314,7 @@ async function viewPatientRecord() {
 // ROLE BANNER (provider.html)
 // ═══════════════════════════════════════
 
-function initRoleBanner() {
+async function initRoleBanner() {
     const params = new URLSearchParams(window.location.search);
     const role = params.get("role");
     currentRole = role;
@@ -1307,13 +1329,13 @@ function initRoleBanner() {
         icon.textContent = "🚑";
         title.textContent = "Paramedic Access";
         desc.textContent = "Triage-critical data only — blood type, allergies, active medications, critical conditions";
-        initProvider("paramedic");
+        await initProvider("paramedic");
     } else {
         banner.classList.add("physician");
         icon.textContent = "👨‍⚕️";
         title.textContent = "Physician Access";
         desc.textContent = "Full medical history — diagnoses, lab results, referral history, medications";
-        initProvider("physician");
+        await initProvider("physician");
     }
 }
 
@@ -1348,14 +1370,16 @@ function getScopeClass(scope) {
 // PAGE INIT
 // ═══════════════════════════════════════
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
+    await loadOptionalPrivateConfig();
+
     const page = window.location.pathname;
 
     if (page.includes("institution")) {
-        initProvider("admin");
+        await initProvider("admin");
     } else if (page.includes("provider")) {
-        initRoleBanner();
+        await initRoleBanner();
     } else if (page.includes("audit")) {
-        initProvider("admin");
+        await initProvider("admin");
     }
 });
