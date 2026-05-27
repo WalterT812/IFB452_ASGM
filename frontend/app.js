@@ -1069,10 +1069,16 @@ async function fetchPatientRecordFromApi(patientID, dataScope, dbReference) {
         return body.data;
     }
 
-    const idRes = await fetch(
+    let idRes = await fetch(
         `http://localhost:3000/api/patient/id/${encodeURIComponent(patientID)}`
     );
-    const idBody = await idRes.json().catch(() => ({}));
+    let idBody = await idRes.json().catch(() => ({}));
+
+    // Backward compatibility: older server builds only expose /api/patient/:patientID
+    if ((!idRes.ok || !idBody.data) && idRes.status === 404) {
+        idRes = await fetch(`http://localhost:3000/api/patient/${encodeURIComponent(patientID)}`);
+        idBody = await idRes.json().catch(() => ({}));
+    }
 
     if (idRes.ok && idBody.data) {
         if (idBody.data.dbReference && idBody.data.dbReference !== dbReference) {
