@@ -1,1 +1,10 @@
 artifacts/
+node_modules/
+medlink.db
+
+# Per-developer Ganache accounts + deployed contract addresses (never commit)
+frontend/config.private.js
+
+# Local notes / coursework — not shared
+_personal/
+.DS_Store
