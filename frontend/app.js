@@ -716,6 +716,27 @@ const ACCOUNTS = {
     insurance: "0x35F57cec1727202429Dd5266f8c1De8697cf97D8"
 };
 
+async function loadOptionalPrivateConfig() {
+    try {
+        const res = await fetch("config.private.js", { cache: "no-store" });
+        if (!res.ok) return false;
+
+        const js = await res.text();
+        const parsed = new Function(
+            `${js}\nreturn {\n` +
+            `  accounts: typeof LOCAL_ACCOUNTS !== "undefined" ? LOCAL_ACCOUNTS : null,\n` +
+            `  contracts: typeof LOCAL_CONTRACT_ADDRESSES !== "undefined" ? LOCAL_CONTRACT_ADDRESSES : null\n` +
+            `};`
+        )();
+
+        if (parsed.accounts) Object.assign(ACCOUNTS, parsed.accounts);
+        if (parsed.contracts) Object.assign(CONTRACT_ADDRESSES, parsed.contracts);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 // ── Provider Setup ──
 let provider;
 let signer;
@@ -724,6 +745,7 @@ let auditContract;
 let consentContract;
 let currentRole;
 let timerInterval;
+const SESSION_DURATION_SEC = 15 * 60;
 
 async function initProvider(role) {
     try {
@@ -772,7 +794,15 @@ async function initProvider(role) {
         const address = await signer.getAddress();
         const walletEl = document.getElementById("walletAddress");
         if (walletEl) {
+            const ganacheAccounts = await provider.listAccounts();
+            const known = ganacheAccounts.map((a) => a.toLowerCase()).includes(address.toLowerCase());
             walletEl.textContent = address;
+            walletEl.title = known
+                ? ""
+                : "This address is not in the current Ganache account list; transactions may fail.";
+            if (!known) {
+                walletEl.style.color = "#f87171";
+            }
         }
 
         return true;
@@ -803,7 +833,7 @@ async function registerProvider() {
         await tx.wait();
         showStatus(statusEl, `✅ Provider registered successfully. TX: ${tx.hash.slice(0,20)}...`, "success");
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -837,7 +867,7 @@ async function submitRecord() {
 
         showStatus(statusEl, `✅ Record submitted. TX: ${tx.hash.slice(0,20)}...`, "success");
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -869,7 +899,7 @@ async function grantConsent() {
         await tx.wait();
         showStatus(statusEl, `✅ Consent granted for ${patientID}.`, "success");
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -888,7 +918,7 @@ async function revokeConsent() {
         await tx.wait();
         showStatus(statusEl, `✅ Consent revoked for ${patientID}.`, "success");
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -909,7 +939,7 @@ async function checkConsent() {
             showStatus(statusEl, `⛔ ${patientID} has no active insurance consent.`, "error");
         }
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -927,33 +957,97 @@ async function requestAccess() {
     }
 
     try {
+        const existing = await readActiveSession();
+        if (existing) {
+            await showActiveSession(existing.patientID, existing.startTime);
+            return;
+        }
+
         showStatus(statusEl, "Requesting emergency access...", "success");
         const tx = await emergencyContract.requestEmergencyAccess(patientID);
         await tx.wait();
-        showStatus(statusEl, `✅ Access granted. Fetching records...`, "success");
 
-        // Fetch patient data
-        await fetchPatientData(patientID);
-
-        // Show revoke button
-        document.getElementById("revokeBtn").style.display = "block";
-
-        // Start 15 min timer
-        startTimer();
+        const session = await readActiveSession();
+        await showActiveSession(patientID, session?.startTime);
+        showStatus(statusEl, "Access granted.", "success");
 
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        const msg = error?.message || "";
+        if (msg.includes("Active session already exists")) {
+            const restored = await restoreActiveSession();
+            if (restored) return;
+        }
+        showErrorStatus(statusEl, error);
+    }
+}
+
+async function readActiveSession() {
+    if (!emergencyContract || !signer) return null;
+
+    const address = await signer.getAddress();
+    const raw = await emergencyContract.activeSessions(address);
+    const isActive = raw.isActive ?? raw[3];
+    if (!isActive) return null;
+
+    const startTime = raw.startTime ?? raw[2];
+    return {
+        isActive: true,
+        patientID: raw.patientID ?? raw[1],
+        startTime: ethers.BigNumber.isBigNumber(startTime) ? startTime.toNumber() : Number(startTime)
+    };
+}
+
+function getSessionRemainingSeconds(startTimeSec) {
+    const now = Math.floor(Date.now() / 1000);
+    return SESSION_DURATION_SEC - (now - startTimeSec);
+}
+
+async function showActiveSession(patientID, startTimeSec) {
+    const statusEl = document.getElementById("accessStatus");
+    const patientInput = document.getElementById("patientID");
+    if (patientInput) patientInput.value = patientID;
+
+    const remaining =
+        startTimeSec != null ? getSessionRemainingSeconds(startTimeSec) : SESSION_DURATION_SEC;
+
+    document.getElementById("revokeBtn").style.display = "block";
+
+    if (remaining <= 0) {
+        showStatus(
+            statusEl,
+            "Access window expired. Click Revoke Access to end this session before requesting again.",
+            "error"
+        );
+        startTimer(startTimeSec);
+        return;
+    }
+
+    showStatus(statusEl, "Restoring active session...", "success");
+    await fetchPatientData(patientID);
+    startTimer(startTimeSec);
+    showStatus(statusEl, "Active session restored.", "success");
+}
+
+async function restoreActiveSession() {
+    try {
+        const session = await readActiveSession();
+        if (!session) return false;
+        await showActiveSession(session.patientID, session.startTime);
+        return true;
+    } catch (error) {
+        console.error("Failed to restore session:", error);
+        return false;
     }
 }
 
 async function fetchPatientData(patientID) {
     try {
-        const result = await emergencyContract.getPatientData(patientID);
-        const dataScope = result[0];
-        const dbReference = result[1];
+        const result = await emergencyContract.callStatic.getPatientData(patientID);
+        const dataScope = result.dataScope ?? result[0];
+        const dbReference = result.dbReference ?? result[1];
 
         // Fetch actual record from SQLite based on scope
-        const endpoint = dataScope === "TRIAGE"
+        const endpoint = isTriageScope(dataScope)
             ? `http://localhost:3000/api/patient/triage/${dbReference}`
             : `http://localhost:3000/api/patient/full/${dbReference}`;
 
@@ -977,7 +1071,7 @@ function displayPatientData(patientID, dataScope, dbReference) {
     const dataRows = document.getElementById("patientDataRows");
 
     // Set scope badge
-    if (dataScope === "TRIAGE") {
+    if (isTriageScope(dataScope)) {
         scopeBadge.innerHTML = `<span class="data-scope-badge scope-triage">TRIAGE — Paramedic Access</span>`;
         dataRows.innerHTML = `
             <div class="data-row">
@@ -1049,7 +1143,7 @@ async function revokeAccess() {
         clearInterval(timerInterval);
 
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -1109,7 +1203,7 @@ async function fetchAuditLog() {
         logContainer.style.display = "block";
 
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -1118,7 +1212,7 @@ function displayRealPatientData(patientID, dataScope, data) {
     const scopeBadge = document.getElementById("scopeBadge");
     const dataRows = document.getElementById("patientDataRows");
 
-    if (dataScope === "TRIAGE") {
+    if (isTriageScope(dataScope)) {
         scopeBadge.innerHTML = `<span class="data-scope-badge scope-triage">TRIAGE — Paramedic Access</span>`;
         dataRows.innerHTML = `
             <div class="data-row">
@@ -1183,28 +1277,30 @@ function displayRealPatientData(patientID, dataScope, data) {
 // TIMER
 // ═══════════════════════════════════════
 
-function startTimer() {
+function startTimer(startTimeSec) {
     const timerBar = document.getElementById("timerBar");
     const timerCountdown = document.getElementById("timerCountdown");
     const timerFill = document.getElementById("timerFill");
 
+    clearInterval(timerInterval);
     timerBar.style.display = "block";
+    timerCountdown.style.color = "";
+    timerFill.style.background = "";
 
-    const totalSeconds = 15 * 60;
-    let remaining = totalSeconds;
+    const totalSeconds = SESSION_DURATION_SEC;
+    const sessionStart = startTimeSec != null ? startTimeSec : Math.floor(Date.now() / 1000);
 
-    timerInterval = setInterval(() => {
-        remaining--;
+    function tick() {
+        const remaining = Math.max(0, getSessionRemainingSeconds(sessionStart));
 
         const mins = Math.floor(remaining / 60);
         const secs = remaining % 60;
-        timerCountdown.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        timerCountdown.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
         const pct = (remaining / totalSeconds) * 100;
         timerFill.style.width = `${pct}%`;
 
-        // Turn red when under 2 minutes
-        if (remaining <= 120) {
+        if (remaining <= 120 && remaining > 0) {
             timerCountdown.style.color = "#ef4444";
             timerFill.style.background = "#ef4444";
         }
@@ -1213,14 +1309,16 @@ function startTimer() {
             clearInterval(timerInterval);
             timerCountdown.textContent = "00:00";
             document.getElementById("dataDisplay").style.display = "none";
-            document.getElementById("revokeBtn").style.display = "none";
             showStatus(
                 document.getElementById("accessStatus"),
-                "⏱ Access window expired. Session automatically revoked.",
+                "Access window expired. Click Revoke Access to end this session.",
                 "error"
             );
         }
-    }, 1000);
+    }
+
+    tick();
+    timerInterval = setInterval(tick, 1000);
 }
 
 // ═══════════════════════════════════════
@@ -1284,7 +1382,7 @@ async function viewPatientRecord() {
         display.style.display = "block";
 
     } catch (error) {
-        showStatus(statusEl, `❌ Error: ${error.message}`, "error");
+        showErrorStatus(statusEl, error);
     }
 }
 
@@ -1292,7 +1390,7 @@ async function viewPatientRecord() {
 // ROLE BANNER (provider.html)
 // ═══════════════════════════════════════
 
-function initRoleBanner() {
+async function initRoleBanner() {
     const params = new URLSearchParams(window.location.search);
     const role = params.get("role");
     currentRole = role;
@@ -1307,14 +1405,16 @@ function initRoleBanner() {
         icon.textContent = "🚑";
         title.textContent = "Paramedic Access";
         desc.textContent = "Triage-critical data only — blood type, allergies, active medications, critical conditions";
-        initProvider("paramedic");
+        await initProvider("paramedic");
     } else {
         banner.classList.add("physician");
         icon.textContent = "👨‍⚕️";
         title.textContent = "Physician Access";
         desc.textContent = "Full medical history — diagnoses, lab results, referral history, medications";
-        initProvider("physician");
+        await initProvider("physician");
     }
+
+    await restoreActiveSession();
 }
 
 // ═══════════════════════════════════════
@@ -1327,6 +1427,47 @@ function showStatus(el, message, type) {
     el.style.display = "block";
 }
 
+function showErrorStatus(el, error) {
+    showStatus(el, `❌ ${formatBlockchainError(error)}`, "error");
+}
+
+function formatBlockchainError(error) {
+    const nested =
+        error?.error?.message ||
+        error?.data?.message ||
+        error?.reason ||
+        error?.message ||
+        String(error);
+
+    let msg = typeof nested === "string" ? nested : String(nested);
+
+    if (msg.includes("sender account not recognized")) {
+        return (
+            "Ganache does not recognise this wallet address. Check that: (1) Ganache is running your IFB452 workspace; " +
+            "(2) frontend/config.private.js exists (copy from config.private.example.js) with your accounts and contract addresses; " +
+            "(3) hard-refresh the page (Ctrl+Shift+R)."
+        );
+    }
+    if (msg.includes("Active session already exists")) {
+        return "An active emergency session already exists. The page should restore it automatically; refresh or click Request Access again.";
+    }
+    if (msg.includes("Provider not registered")) {
+        return "This wallet is not registered on-chain. Register the paramedic/physician address on the Institution page (admin account) first.";
+    }
+    if (msg.includes("execution reverted")) {
+        const revert = msg.match(/reverted:?\s*([^"]+)/i);
+        if (revert) return `Transaction reverted: ${revert[1].trim()}`;
+    }
+
+    if (msg.length > 180) {
+        const quoted = msg.match(/"message"\s*:\s*"([^"]+)"/);
+        if (quoted) return quoted[1];
+        if (msg.includes("{")) return "Blockchain request failed. Open the browser console (F12) for details.";
+    }
+
+    return msg;
+}
+
 function getActionClass(action) {
     switch(action) {
         case "ACCESS_GRANTED": return "action-granted";
@@ -1336,26 +1477,30 @@ function getActionClass(action) {
     }
 }
 
+function isTriageScope(dataScope) {
+    return dataScope === "TRIAGE" || dataScope === "Triage";
+}
+
 function getScopeClass(scope) {
-    switch(scope) {
-        case "TRIAGE": return "scope-triage";
-        case "FULL": return "scope-full";
-        default: return "scope-pending";
-    }
+    if (isTriageScope(scope)) return "scope-triage";
+    if (scope === "FULL") return "scope-full";
+    return "scope-pending";
 }
 
 // ═══════════════════════════════════════
 // PAGE INIT
 // ═══════════════════════════════════════
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
+    await loadOptionalPrivateConfig();
+
     const page = window.location.pathname;
 
     if (page.includes("institution")) {
-        initProvider("admin");
+        await initProvider("admin");
     } else if (page.includes("provider")) {
-        initRoleBanner();
+        await initRoleBanner();
     } else if (page.includes("audit")) {
-        initProvider("admin");
+        await initProvider("admin");
     }
 });
